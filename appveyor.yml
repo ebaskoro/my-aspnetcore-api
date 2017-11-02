@@ -17,3 +17,11 @@ build_script:
 
 test_script:
   - cmd: dotnet test Api.Tests 
+
+notifications:
+  - provider: webhook
+    url: https://webhooks.gitter.im/e/4a976a2287ab49087f35
+    method: POST
+    on_build_success: true
+    on_build_failure: true
+    on_build_status_changed: true
