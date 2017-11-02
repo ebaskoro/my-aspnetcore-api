@@ -17,7 +17,7 @@ build_script:
   - dotnet build
 
 test_script:
-  - OpenCover.Console.exe -register:user -target:"%xunit20%\xunit.console.x86.exe" -targetargs:".\Api.Tests\bin\Debug\netcoreapp2.0\Api.Tests.dll -noshadow" -output:".\coverage.xml"
+  - OpenCover.Console.exe -register:user -target:"C:\Program Files\dotnet\dotnet.exe" -targetargs:"test Api.Tests" -output:".\coverage.xml" -oldStyle
   - codecov -f "coverage.xml"
 
 notifications:
