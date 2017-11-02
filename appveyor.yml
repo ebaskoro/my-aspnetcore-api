@@ -19,7 +19,7 @@ test_script:
   - cmd: dotnet test Api.Tests 
 
 notifications:
-  - provider: webhook
+  - provider: Webhook
     url: https://webhooks.gitter.im/e/4a976a2287ab49087f35
     method: POST
     on_build_success: true
