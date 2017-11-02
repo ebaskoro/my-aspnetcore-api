@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Api.Models;
@@ -21,6 +22,10 @@ namespace Api
         {
             services.AddDbContext<HeroContext>(options => options.UseInMemoryDatabase("Heroes"));
             
+            services.AddCors(options =>
+                options.AddPolicy("AllowAll", builder =>
+                    builder.AllowAnyOrigin()));
+
             services.AddMvc();
         }
 
@@ -31,6 +36,8 @@ namespace Api
         /// <param name="app">Application to configure.</param>
         public void Configure(IApplicationBuilder app)
         {
+            app.UseCors("AllowAll");
+
             app.UseMvc();
         }
 

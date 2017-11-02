@@ -12,12 +12,18 @@ using Api.Models;
 namespace Api.Tests.Controllers
 {
 
+    /// <summary>
+    /// Unit tests for the Heroes controller.
+    /// </summary>
     public class HeroesControllerTest : IDisposable
     {
 
         private readonly SqliteConnection _connection;
 
 
+        /// <summary>
+        /// Creates the test contexts.
+        /// </summary>
         public HeroesControllerTest()
         {
             var builder = new SqliteConnectionStringBuilder
@@ -37,18 +43,27 @@ namespace Api.Tests.Controllers
         }
 
 
+        /// <summary>
+        /// Gets the target to test.
+        /// </summary>
         HeroesController Target
         {
             get;
         }
 
 
+        /// <summary>
+        /// Gets the database context.
+        /// </summary>
         HeroContext Context
         {
             get;
         }
 
 
+        /// <summary>
+        /// Disposes the test context.
+        /// </summary>
         public void Dispose()
         {
             _connection.Close();
@@ -59,11 +74,11 @@ namespace Api.Tests.Controllers
         [Fact]
         public void Constructor_Initialises_Correctly()
         {
-            Assert.Equal(4, Context.Heroes.Count());
+            Assert.Equal(5, Context.Heroes.Count());
             Assert.Equal(1, Context.Heroes.First().Id);
             Assert.Equal("Dare Devil", Context.Heroes.First().Name);
-            Assert.Equal(4, Context.Heroes.Last().Id);
-            Assert.Equal("Iron Fist", Context.Heroes.Last().Name);
+            Assert.Equal(5, Context.Heroes.Last().Id);
+            Assert.Equal("Arrow", Context.Heroes.Last().Name);
         }
 
 

@@ -33,6 +33,7 @@ namespace Api.Controllers
                 _context.Heroes.Add(new Hero { Name = "Luke Cage" });
                 _context.Heroes.Add(new Hero { Name = "Jessica Jones" });
                 _context.Heroes.Add(new Hero { Name = "Iron Fist" });
+                _context.Heroes.Add(new Hero { Name = "Arrow" });
                 _context.SaveChanges();
             }
         }
