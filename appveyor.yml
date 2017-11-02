@@ -1,0 +1,19 @@
+#
+# appveyor.yml
+#
+#
+
+version 0.0.1.{build}
+
+branches:
+  only:
+    - master
+
+image: Visual Studio 2015
+
+build_script:
+  - cmd: dotnet restore
+  - cmd: dotnet build
+
+test_script:
+  - cmd: dotnet test Api.Tests 
