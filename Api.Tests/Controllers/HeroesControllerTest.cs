@@ -121,7 +121,7 @@ namespace Api.Tests.Controllers
 
 
         [Fact]
-        public async void GetById_When_InexistentId_Returns_InstanceOf_NotFoundResult()
+        public async void GetById_When_NonExistentId_Returns_InstanceOf_NotFoundResult()
         {
             var actual = await Target.GetById(999);
 
@@ -195,6 +195,82 @@ namespace Api.Tests.Controllers
             var actual = Context.Heroes.Count();
 
             Assert.Equal(6, actual);
+        }
+
+
+        [Fact]
+        public async void Update_Returns_NotNull()
+        {
+            var actual = await Target.Update(0, null);
+
+            Assert.NotNull(actual);
+        }
+
+
+        [Fact]
+        public async void Update_When_NullHero_Returns_InstanceOf_BadRequestResult()
+        {
+            var actual = await Target.Update(0, null);
+
+            Assert.IsType<BadRequestResult>(actual);
+        }
+
+
+        [Fact]
+        public async void Update_When_MismatchedId_Returns_InstanceOf_BadRequestResult()
+        {
+            var hero = new Hero
+            {
+                Id = 1
+            };
+            var actual = await Target.Update(2, hero);
+
+            Assert.IsType<BadRequestResult>(actual);
+        }
+
+
+        [Fact]
+        public async void Update_When_NonExistentHero_Returns_InstanceOf_NotFoundResult()
+        {
+            var id = 999;
+            var hero = new Hero
+            {
+                Id = id
+            };
+            var actual = await Target.Update(id, hero);
+
+            Assert.IsType<NotFoundResult>(actual);
+        }
+
+
+        [Fact]
+        public async void Update_When_ExistentHero_Returns_InstanceOf_NoContentResult()
+        {
+            var id = 1;
+            var hero = new Hero
+            {
+                Id = id,
+                Name = "New Name"
+            };
+            var actual = await Target.Update(id, hero);
+
+            Assert.IsType<NoContentResult>(actual);
+        }
+
+
+        [Fact]
+        public async void Update_When_ExistentHero_Updates_Database_Correctly()
+        {
+            var id = 1;
+            var expected = "New Name";
+            var hero = new Hero
+            {
+                Id = id,
+                Name = expected
+            };
+            await Target.Update(id, hero);
+
+            Assert.Equal(expected, Context.Heroes.First().Name);
         }
         
     }

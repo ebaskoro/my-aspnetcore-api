@@ -90,6 +90,37 @@ namespace Api.Controllers
 
             return CreatedAtRoute("GetHeroById", new { id = hero.Id }, hero);
         }
+
+
+        /// <summary>
+        /// Updates a hero.
+        /// </summary>
+        /// <param name="id">ID of the hero to update.</param>
+        /// <param name="heroToUpdate">Hero to update.</param>
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(long id, [FromBody] Hero heroToUpdate)
+        {
+            if (heroToUpdate == null
+                || heroToUpdate.Id != id)
+            {
+                return BadRequest();
+            }
+
+            var foundHero = await _context
+                .Heroes
+                .FirstOrDefaultAsync(hero => hero.Id == id);
+            
+            if (foundHero == null)
+            {
+                return NotFound();
+            }
+
+            foundHero.Name = heroToUpdate.Name;
+            _context.Heroes.Update(foundHero);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
         
     }
     
