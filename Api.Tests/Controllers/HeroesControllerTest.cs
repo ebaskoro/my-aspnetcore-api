@@ -109,6 +109,44 @@ namespace Api.Tests.Controllers
 
             Assert.IsType<List<Hero>>(actual);
         }
+
+
+        [Fact]
+        public async void GetById_Returns_NotNull()
+        {
+            var actual = await Target.GetById(0);
+
+            Assert.NotNull(actual);
+        }
+
+
+        [Fact]
+        public async void GetById_When_InexistentId_Returns_InstanceOf_NotFoundResult()
+        {
+            var actual = await Target.GetById(999);
+
+            Assert.IsType<NotFoundResult>(actual);
+        }
+
+
+        [Fact]
+        public async void GetById_When_ExistentId_Returns_InstanceOf_OkObjecResult()
+        {
+            var actual = await Target.GetById(1);
+
+            Assert.IsType<OkObjectResult>(actual);
+        }
+
+
+        [Fact]
+        public async void GetById_When_ExistentId_Returns_Value_InstanceOf_Hero()
+        {
+            var actionResult = await Target.GetById(1);
+            var okObjectResult = (OkObjectResult)actionResult;
+            var actual = okObjectResult.Value;
+
+            Assert.IsType<Hero>(actual);
+        }
         
     }
 

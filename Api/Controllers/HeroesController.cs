@@ -49,6 +49,27 @@ namespace Api.Controllers
             var heroes = await _context.Heroes.ToListAsync();
             return Ok(heroes);
         }
+
+
+        /// <summary>
+        /// Gets a hero by its ID.
+        /// </summary>
+        /// <param name="id">ID to look up.</param>
+        /// <returns>The hero if found or NotFound otherwise.</returns>
+        [HttpGet("{id}", Name = "GetHeroById")]
+        public async Task<IActionResult> GetById(long id)
+        {
+            var foundHero = await _context
+                .Heroes
+                .FirstOrDefaultAsync(hero => hero.Id == id);
+
+            if (foundHero == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(foundHero);
+        }
         
     }
     
