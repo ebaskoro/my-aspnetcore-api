@@ -109,6 +109,205 @@ namespace Api.Tests.Controllers
 
             Assert.IsType<List<Hero>>(actual);
         }
+
+
+        [Fact]
+        public async void GetById_Returns_NotNull()
+        {
+            var actual = await Target.GetById(0);
+
+            Assert.NotNull(actual);
+        }
+
+
+        [Fact]
+        public async void GetById_When_NonExistentId_Returns_InstanceOf_NotFoundResult()
+        {
+            var actual = await Target.GetById(999);
+
+            Assert.IsType<NotFoundResult>(actual);
+        }
+
+
+        [Fact]
+        public async void GetById_When_ExistentId_Returns_InstanceOf_OkObjecResult()
+        {
+            var actual = await Target.GetById(1);
+
+            Assert.IsType<OkObjectResult>(actual);
+        }
+
+
+        [Fact]
+        public async void GetById_When_ExistentId_Returns_Value_InstanceOf_Hero()
+        {
+            var actionResult = await Target.GetById(1);
+            var okObjectResult = (OkObjectResult)actionResult;
+            var actual = okObjectResult.Value;
+
+            Assert.IsType<Hero>(actual);
+        }
+
+
+        [Fact]
+        public async void Create_Returns_NotNull()
+        {
+            var actual = await Target.Create(null);
+
+            Assert.NotNull(actual);
+        }
+
+
+        [Fact]
+        public async void Create_When_NullHero_Returns_InstanceOf_BadRequestResult()
+        {
+            var actual = await Target.Create(null);
+
+            Assert.IsType<BadRequestResult>(actual);
+        }
+
+
+        [Fact]
+        public async void Create_When_NonNullHero_Returns_InstanceOf_CreatedAtRouteResult()
+        {
+            var actual = await Target.Create(new Hero());
+
+            Assert.IsType<CreatedAtRouteResult>(actual);
+        }
+
+
+        [Fact]
+        public async void Create_When_NonNullHero_Returns_Correctly()
+        {
+            var actionResult = await Target.Create(new Hero());
+            var actual = (CreatedAtRouteResult)actionResult;
+
+            Assert.Equal("GetHeroById", actual.RouteName);
+            Assert.Equal(6L, actual.RouteValues["id"]);
+            Assert.IsType<Hero>(actual.Value);
+        }
+
+
+        [Fact]
+        public async void Create_When_NonNullHero_Updates_Database_Correctly()
+        {
+            await Target.Create(new Hero());
+            var actual = Context.Heroes.Count();
+
+            Assert.Equal(6, actual);
+        }
+
+
+        [Fact]
+        public async void Update_Returns_NotNull()
+        {
+            var actual = await Target.Update(0, null);
+
+            Assert.NotNull(actual);
+        }
+
+
+        [Fact]
+        public async void Update_When_NullHero_Returns_InstanceOf_BadRequestResult()
+        {
+            var actual = await Target.Update(0, null);
+
+            Assert.IsType<BadRequestResult>(actual);
+        }
+
+
+        [Fact]
+        public async void Update_When_MismatchedId_Returns_InstanceOf_BadRequestResult()
+        {
+            var hero = new Hero
+            {
+                Id = 1
+            };
+            var actual = await Target.Update(2, hero);
+
+            Assert.IsType<BadRequestResult>(actual);
+        }
+
+
+        [Fact]
+        public async void Update_When_NonExistentHero_Returns_InstanceOf_NotFoundResult()
+        {
+            var id = 999;
+            var hero = new Hero
+            {
+                Id = id
+            };
+            var actual = await Target.Update(id, hero);
+
+            Assert.IsType<NotFoundResult>(actual);
+        }
+
+
+        [Fact]
+        public async void Update_When_ExistentHero_Returns_InstanceOf_NoContentResult()
+        {
+            var id = 1;
+            var hero = new Hero
+            {
+                Id = id,
+                Name = "New Name"
+            };
+            var actual = await Target.Update(id, hero);
+
+            Assert.IsType<NoContentResult>(actual);
+        }
+
+
+        [Fact]
+        public async void Update_When_ExistentHero_Updates_Database_Correctly()
+        {
+            var id = 1;
+            var expected = "New Name";
+            var hero = new Hero
+            {
+                Id = id,
+                Name = expected
+            };
+            await Target.Update(id, hero);
+
+            Assert.Equal(expected, Context.Heroes.First().Name);
+        }
+
+
+        [Fact]
+        public async void Delete_Returns_NotNull()
+        {
+            var actual = await Target.Delete(0);
+
+            Assert.NotNull(actual);
+        }
+
+
+        [Fact]
+        public async void Delete_When_NonExistentId_Returns_InstanceOf_NotFoundResult()
+        {
+            var actual = await Target.Delete(999);
+
+            Assert.IsType<NotFoundResult>(actual);
+        }
+
+
+        [Fact]
+        public async void Delete_When_ExistentId_Returns_InstanceOf_NoContentResult()
+        {
+            var actual = await Target.Delete(1);
+
+            Assert.IsType<NoContentResult>(actual);
+        }
+
+        
+        [Fact]
+        public async void Delete_When_ExistentId_Updates_Database_Correctly()
+        {
+            await Target.Delete(1);
+
+            Assert.Equal(2, Context.Heroes.First().Id);
+        }
         
     }
 
