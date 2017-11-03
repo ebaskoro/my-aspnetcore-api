@@ -121,6 +121,29 @@ namespace Api.Controllers
 
             return NoContent();
         }
+
+
+        /// <summary>
+        /// Deletes a hero.
+        /// </summary>
+        /// <param name="id">ID of the hero to delete.</param>
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(long id)
+        {
+            var heroToDelete = await _context
+                .Heroes
+                .FirstOrDefaultAsync(hero => hero.Id == id);
+            
+            if (heroToDelete == null)
+            {
+                return NotFound();
+            }
+
+            _context.Heroes.Remove(heroToDelete);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
         
     }
     

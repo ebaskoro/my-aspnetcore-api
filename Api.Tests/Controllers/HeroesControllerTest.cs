@@ -272,6 +272,42 @@ namespace Api.Tests.Controllers
 
             Assert.Equal(expected, Context.Heroes.First().Name);
         }
+
+
+        [Fact]
+        public async void Delete_Returns_NotNull()
+        {
+            var actual = await Target.Delete(0);
+
+            Assert.NotNull(actual);
+        }
+
+
+        [Fact]
+        public async void Delete_When_NonExistentId_Returns_InstanceOf_NotFoundResult()
+        {
+            var actual = await Target.Delete(999);
+
+            Assert.IsType<NotFoundResult>(actual);
+        }
+
+
+        [Fact]
+        public async void Delete_When_ExistentId_Returns_InstanceOf_NoContentResult()
+        {
+            var actual = await Target.Delete(1);
+
+            Assert.IsType<NoContentResult>(actual);
+        }
+
+        
+        [Fact]
+        public async void Delete_When_ExistentId_Updates_Database_Correctly()
+        {
+            await Target.Delete(1);
+
+            Assert.Equal(2, Context.Heroes.First().Id);
+        }
         
     }
 
