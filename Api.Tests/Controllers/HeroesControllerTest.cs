@@ -147,6 +147,55 @@ namespace Api.Tests.Controllers
 
             Assert.IsType<Hero>(actual);
         }
+
+
+        [Fact]
+        public async void Create_Returns_NotNull()
+        {
+            var actual = await Target.Create(null);
+
+            Assert.NotNull(actual);
+        }
+
+
+        [Fact]
+        public async void Create_When_NullHero_Returns_InstanceOf_BadRequestResult()
+        {
+            var actual = await Target.Create(null);
+
+            Assert.IsType<BadRequestResult>(actual);
+        }
+
+
+        [Fact]
+        public async void Create_When_NonNullHero_Returns_InstanceOf_CreatedAtRouteResult()
+        {
+            var actual = await Target.Create(new Hero());
+
+            Assert.IsType<CreatedAtRouteResult>(actual);
+        }
+
+
+        [Fact]
+        public async void Create_When_NonNullHero_Returns_Correctly()
+        {
+            var actionResult = await Target.Create(new Hero());
+            var actual = (CreatedAtRouteResult)actionResult;
+
+            Assert.Equal("GetHeroById", actual.RouteName);
+            Assert.Equal(6L, actual.RouteValues["id"]);
+            Assert.IsType<Hero>(actual.Value);
+        }
+
+
+        [Fact]
+        public async void Create_When_NonNullHero_Updates_Database_Correctly()
+        {
+            await Target.Create(new Hero());
+            var actual = Context.Heroes.Count();
+
+            Assert.Equal(6, actual);
+        }
         
     }
 

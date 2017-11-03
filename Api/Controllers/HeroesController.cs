@@ -70,6 +70,26 @@ namespace Api.Controllers
 
             return Ok(foundHero);
         }
+
+
+        /// <summary>
+        /// Creates a hero.
+        /// </summary>
+        /// <param name="hero">Hero to create.</param>
+        /// <returns>The newly created hero.</returns>
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] Hero hero)
+        {
+            if (hero == null)
+            {
+                return BadRequest();
+            }
+
+            _context.Heroes.Add(hero);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtRoute("GetHeroById", new { id = hero.Id }, hero);
+        }
         
     }
     
