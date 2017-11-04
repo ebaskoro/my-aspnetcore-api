@@ -150,6 +150,101 @@ namespace Api.Tests.Controllers
 
 
         [Fact]
+        public async void GetByName_Returns_NotNull()
+        {
+            var actual = await Target.GetByName(null);
+
+            Assert.NotNull(actual);
+        }
+
+
+        [Fact]
+        public async void GetByName_Returns_InstanceOf_OkObjectResult()
+        {
+            var actual = await Target.GetByName(null);
+
+            Assert.IsType<OkObjectResult>(actual);
+        }
+
+
+        [Fact]
+        public async void GetByName_Returns_Value_InstanceOf_ListOfHeroes()
+        {
+            var actionResult = await Target.GetByName(null);
+            var okObjectResult = (OkObjectResult)actionResult;
+            var actual = okObjectResult.Value;
+
+            Assert.IsType<List<Hero>>(actual);
+        }
+
+
+        [Fact]
+        public async void GetByName_When_NullName_Returns_AllHeroes()
+        {
+            var actionResult = await Target.GetByName(null);
+            var okObjectResult = (OkObjectResult)actionResult;
+            var actual = (List<Hero>)okObjectResult.Value;
+
+            Assert.Equal(5, actual.Count);
+        }
+
+
+        [Fact]
+        public async void GetByName_When_EmptyName_Returns_AllHeroes()
+        {
+            var actionResult = await Target.GetByName(string.Empty);
+            var okObjectResult = (OkObjectResult)actionResult;
+            var actual = (List<Hero>)okObjectResult.Value;
+
+            Assert.Equal(5, actual.Count);
+        }
+
+
+        [Fact]
+        public async void GetByName_When_NoMatches_Returns_Empty()
+        {
+            var actionResult = await Target.GetByName("no match");
+            var okObjectResult = (OkObjectResult)actionResult;
+            var actual = (List<Hero>)okObjectResult.Value;
+
+            Assert.Empty(actual);
+        }
+
+
+        [Fact]
+        public async void GetByName_When_LowercasedName_And_HasMatches_Returns_NonEmpty()
+        {
+            var actionResult = await Target.GetByName("lu");
+            var okObjectResult = (OkObjectResult)actionResult;
+            var actual = (List<Hero>)okObjectResult.Value;
+
+            Assert.Single(actual);
+        }
+
+
+        [Fact]
+        public async void GetByName_When_UppercasedName_And_HasMatches_Returns_NonEmpty()
+        {
+            var actionResult = await Target.GetByName("LU");
+            var okObjectResult = (OkObjectResult)actionResult;
+            var actual = (List<Hero>)okObjectResult.Value;
+
+            Assert.Single(actual);
+        }
+
+
+        [Fact]
+        public async void GetByName_When_MixedcasedName_And_HasMatches_Returns_NonEmpty()
+        {
+            var actionResult = await Target.GetByName("Lu");
+            var okObjectResult = (OkObjectResult)actionResult;
+            var actual = (List<Hero>)okObjectResult.Value;
+
+            Assert.Single(actual);
+        }
+
+
+        [Fact]
         public async void Create_Returns_NotNull()
         {
             var actual = await Target.Create(null);

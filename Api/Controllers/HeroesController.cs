@@ -43,10 +43,12 @@ namespace Api.Controllers
         /// Gets all heroes.
         /// </summary>
         /// <returns>Collection of heroes.</returns>
-        [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var heroes = await _context.Heroes.ToListAsync();
+            var heroes = await _context
+                .Heroes
+                .ToListAsync();
+
             return Ok(heroes);
         }
 
@@ -69,6 +71,29 @@ namespace Api.Controllers
             }
 
             return Ok(foundHero);
+        }
+
+
+        /// <summary>
+        /// Gets heroes having matching name.
+        /// </summary>
+        /// <param name="name">Name to look up.</param>
+        /// <returns>The matching heroes or all if no name specified.</returns>
+        [HttpGet]
+        public async Task<IActionResult> GetByName(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                return await GetAll();
+            }
+
+            name = name.ToLower();
+            var heroes = await _context
+                .Heroes
+                .Where(hero => hero.Name.ToLower().Contains(name))
+                .ToListAsync();
+
+            return Ok(heroes);
         }
 
 
