@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using Api.Data;
 using Api.Models;
 
 
@@ -16,26 +16,18 @@ namespace Api.Controllers
     public class HeroesController : Controller
     {
 
-        private readonly HeroContext _context;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IHeroRepository _heroRepository;
 
 
         /// <summary>
         /// Creates a new controller.
         /// </summary>
-        /// <param name="context">Hero context to use.</param>
-        public HeroesController(HeroContext context)
+        /// <param name="context">Unit of work to use.</param>
+        public HeroesController(IUnitOfWork unitOfWork)
         {
-            _context = context;
-
-            if (false == _context.Heroes.Any())
-            {
-                _context.Heroes.Add(new Hero { Name = "Dare Devil" });
-                _context.Heroes.Add(new Hero { Name = "Luke Cage" });
-                _context.Heroes.Add(new Hero { Name = "Jessica Jones" });
-                _context.Heroes.Add(new Hero { Name = "Iron Fist" });
-                _context.Heroes.Add(new Hero { Name = "Arrow" });
-                _context.SaveChanges();
-            }
+            _unitOfWork = unitOfWork;
+            _heroRepository = unitOfWork.HeroRepository;
         }
 
 
@@ -43,13 +35,19 @@ namespace Api.Controllers
         /// Gets all heroes.
         /// </summary>
         /// <returns>Collection of heroes.</returns>
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAllHeroesAsync()
         {
-            var heroes = await _context
-                .Heroes
-                .ToListAsync();
+            var heroes = await _heroRepository.GetAllAsync();
+            var heroModels = new List<HeroModel>();
+            heroes
+                .ToList()
+                .ForEach(hero => heroModels.Add(new HeroModel
+                {
+                    Id = hero.Id,
+                    Name = hero.Name
+                }));
 
-            return Ok(heroes);
+            return Ok(heroModels);
         }
 
 
@@ -59,18 +57,22 @@ namespace Api.Controllers
         /// <param name="id">ID to look up.</param>
         /// <returns>The hero if found or NotFound otherwise.</returns>
         [HttpGet("{id}", Name = "GetHeroById")]
-        public async Task<IActionResult> GetById(long id)
+        public async Task<IActionResult> GetHeroByIdAsync(long id)
         {
-            var foundHero = await _context
-                .Heroes
-                .FirstOrDefaultAsync(hero => hero.Id == id);
+            var foundHero = await _heroRepository.GetByIdAsync(id);
 
             if (foundHero == null)
             {
                 return NotFound();
             }
 
-            return Ok(foundHero);
+            var heroModel = new HeroModel
+            {
+                Id = foundHero.Id,
+                Name = foundHero.Name
+            };
+
+            return Ok(heroModel);
         }
 
 
@@ -80,40 +82,49 @@ namespace Api.Controllers
         /// <param name="name">Name to look up.</param>
         /// <returns>The matching heroes or all if no name specified.</returns>
         [HttpGet]
-        public async Task<IActionResult> GetByName(string name)
+        public async Task<IActionResult> SearchHeroesByNameAsync(string name)
         {
             if (string.IsNullOrEmpty(name))
             {
-                return await GetAll();
+                return await GetAllHeroesAsync();
             }
 
-            name = name.ToLower();
-            var heroes = await _context
-                .Heroes
-                .Where(hero => hero.Name.ToLower().Contains(name))
-                .ToListAsync();
+            var matchingHeroes = await _heroRepository.SearchByNameAsync(name);
+            var heroModels = new List<HeroModel>();
+            matchingHeroes
+                .ToList()
+                .ForEach(hero => heroModels.Add(new HeroModel
+                {
+                    Id = hero.Id,
+                    Name = hero.Name
+                }));
 
-            return Ok(heroes);
+            return Ok(heroModels);
         }
 
 
         /// <summary>
         /// Creates a hero.
         /// </summary>
-        /// <param name="hero">Hero to create.</param>
+        /// <param name="heroModel">Hero to create.</param>
         /// <returns>The newly created hero.</returns>
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] Hero hero)
+        public async Task<IActionResult> CreateHeroAsync([FromBody] HeroModel heroModel)
         {
-            if (hero == null)
+            if (heroModel == null)
             {
                 return BadRequest();
             }
 
-            _context.Heroes.Add(hero);
-            await _context.SaveChangesAsync();
+            var heroToAdd = new Hero
+            {
+                Name = heroModel.Name
+            };
+            await _heroRepository.AddAsync(heroToAdd);
+            await _unitOfWork.SaveAsync();
+            heroModel.Id = heroToAdd.Id;
 
-            return CreatedAtRoute("GetHeroById", new { id = hero.Id }, hero);
+            return CreatedAtRoute("GetHeroById", new { id = heroToAdd.Id }, heroModel);
         }
 
 
@@ -121,28 +132,25 @@ namespace Api.Controllers
         /// Updates a hero.
         /// </summary>
         /// <param name="id">ID of the hero to update.</param>
-        /// <param name="heroToUpdate">Hero to update.</param>
+        /// <param name="heroModel">Hero to update.</param>
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(long id, [FromBody] Hero heroToUpdate)
+        public async Task<IActionResult> UpdateHeroAsync(long id, [FromBody] HeroModel heroModel)
         {
-            if (heroToUpdate == null
-                || heroToUpdate.Id != id)
+            if (heroModel == null
+                || heroModel.Id != id)
             {
                 return BadRequest();
             }
 
-            var foundHero = await _context
-                .Heroes
-                .FirstOrDefaultAsync(hero => hero.Id == id);
+            var foundHero = await _heroRepository.GetByIdAsync(id);
             
             if (foundHero == null)
             {
                 return NotFound();
             }
 
-            foundHero.Name = heroToUpdate.Name;
-            _context.Heroes.Update(foundHero);
-            await _context.SaveChangesAsync();
+            foundHero.Name = heroModel.Name;
+            await _unitOfWork.SaveAsync();
 
             return NoContent();
         }
@@ -153,19 +161,17 @@ namespace Api.Controllers
         /// </summary>
         /// <param name="id">ID of the hero to delete.</param>
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(long id)
+        public async Task<IActionResult> DeleteHeroAsync(long id)
         {
-            var heroToDelete = await _context
-                .Heroes
-                .FirstOrDefaultAsync(hero => hero.Id == id);
+            var heroToDelete = await _heroRepository.GetByIdAsync(id);
             
             if (heroToDelete == null)
             {
                 return NotFound();
             }
 
-            _context.Heroes.Remove(heroToDelete);
-            await _context.SaveChangesAsync();
+            _heroRepository.Remove(heroToDelete);
+            await _unitOfWork.SaveAsync();
 
             return NoContent();
         }

@@ -1,8 +1,9 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Api.Models;
+using Api.Data;
 
 
 namespace Api
@@ -14,6 +15,18 @@ namespace Api
     public class Startup
     {
 
+        public Startup(IConfiguration configuration)
+        {
+            Configuration = configuration;
+        }
+
+
+        IConfiguration Configuration
+        {
+            get;
+        }
+
+
         /// <summary>
         /// Configures the services used by the application.
         /// </summary>
@@ -21,6 +34,8 @@ namespace Api
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddDbContext<HeroContext>(options => options.UseInMemoryDatabase("Heroes"));
+            services.AddScoped<IHeroRepository, HeroRepository>();
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
             
             services.AddCors(options =>
                 options.AddPolicy("AllowAll", builder =>

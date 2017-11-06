@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.Sqlite;
-using Microsoft.EntityFrameworkCore;
+using FakeItEasy;
 using Xunit;
 using Api.Controllers;
+using Api.Data;
 using Api.Models;
 
 
@@ -18,29 +19,25 @@ namespace Api.Tests.Controllers
     public class HeroesControllerTest : IDisposable
     {
 
-        private readonly SqliteConnection _connection;
-
-
         /// <summary>
-        /// Creates the test contexts.
+        /// CreateHeroAsyncs the test contexts.
         /// </summary>
         public HeroesControllerTest()
         {
-            var builder = new SqliteConnectionStringBuilder
-            {
-                DataSource = ":memory:"
-            };
-            var connectionString = builder.ToString();
-            _connection = new SqliteConnection(connectionString);
-            _connection.Open();
-            var options = new DbContextOptionsBuilder<HeroContext>()
-                .UseSqlite(_connection)
-                .Options;
-            Context = new HeroContext(options);
-            Context.Database.EnsureCreated();
+            UnitOfWork = A.Fake<IUnitOfWork>();
 
-            Target = new HeroesController(Context);
+            Target = new HeroesController(UnitOfWork);
         }
+
+
+        /// <summary>
+        /// Gets the fake unit of work.
+        /// </summary>
+        IUnitOfWork UnitOfWork
+        {
+            get;
+        }
+
 
 
         /// <summary>
@@ -52,358 +49,396 @@ namespace Api.Tests.Controllers
         }
 
 
-        /// <summary>
-        /// Gets the database context.
-        /// </summary>
-        HeroContext Context
-        {
-            get;
-        }
-
-
-        /// <summary>
-        /// Disposes the test context.
-        /// </summary>
-        public void Dispose()
-        {
-            _connection.Close();
-            Context.Dispose();
-        }
-
-
         [Fact]
-        public void Constructor_Initialises_Correctly()
+        public async void GetAllHeroesAsync_Returns_NotNull()
         {
-            Assert.Equal(5, Context.Heroes.Count());
-            Assert.Equal(1, Context.Heroes.First().Id);
-            Assert.Equal("Dare Devil", Context.Heroes.First().Name);
-            Assert.Equal(5, Context.Heroes.Last().Id);
-            Assert.Equal("Arrow", Context.Heroes.Last().Name);
-        }
-
-
-        [Fact]
-        public async void GetAll_Returns_NotNull()
-        {
-            var actual = await Target.GetAll();
+            var actual = await Target.GetAllHeroesAsync();
 
             Assert.NotNull(actual);
         }
 
 
         [Fact]
-        public async void GetAll_Returns_InstanceOf_OkObjectResult()
+        public async void GetAllHeroesAsync_Returns_InstanceOf_OkObjectResult()
         {
-            var actual = await Target.GetAll();
+            var actual = await Target.GetAllHeroesAsync();
 
             Assert.IsType<OkObjectResult>(actual);
         }
 
 
         [Fact]
-        public async void GetAll_Returns_Value_InstanceOf_ListOfHeroes()
+        public async void GetAllHeroesAsync_Returns_Value_InstanceOf_ListOfHeroModels()
         {
-            var actionResult = await Target.GetAll();
+            var actionResult = await Target.GetAllHeroesAsync();
             var okObjectResult = (OkObjectResult)actionResult;
             var actual = okObjectResult.Value;
 
-            Assert.IsType<List<Hero>>(actual);
+            Assert.IsType<List<HeroModel>>(actual);
         }
 
 
         [Fact]
-        public async void GetById_Returns_NotNull()
+        public async void GetHeroByIdAsync_Returns_NotNull()
         {
-            var actual = await Target.GetById(0);
+            var actual = await Target.GetHeroByIdAsync(0);
 
             Assert.NotNull(actual);
         }
 
 
         [Fact]
-        public async void GetById_When_NonExistentId_Returns_InstanceOf_NotFoundResult()
+        public async void GetHeroByIdAsync_When_NonExistentId_Returns_InstanceOf_NotFoundResult()
         {
-            var actual = await Target.GetById(999);
+            A.CallTo(() => UnitOfWork.HeroRepository.GetByIdAsync(A<long>.Ignored))
+                .Returns(Task.FromResult((Hero)null));
+
+            var actual = await Target.GetHeroByIdAsync(999);
 
             Assert.IsType<NotFoundResult>(actual);
         }
 
 
         [Fact]
-        public async void GetById_When_ExistentId_Returns_InstanceOf_OkObjecResult()
+        public async void GetHeroByIdAsync_When_ExistentId_Returns_InstanceOf_OkObjecResult()
         {
-            var actual = await Target.GetById(1);
+            A.CallTo(() => UnitOfWork.HeroRepository.GetByIdAsync(A<int>.Ignored))
+                .Returns(Task.FromResult(new Hero()));
+
+            var actual = await Target.GetHeroByIdAsync(1);
 
             Assert.IsType<OkObjectResult>(actual);
         }
 
 
         [Fact]
-        public async void GetById_When_ExistentId_Returns_Value_InstanceOf_Hero()
+        public async void GetHeroByIdAsync_When_ExistentId_Returns_Value_InstanceOf_HeroMode()
         {
-            var actionResult = await Target.GetById(1);
+            A.CallTo(() => UnitOfWork.HeroRepository.GetByIdAsync(A<int>.Ignored))
+                .Returns(Task.FromResult(new Hero()));
+
+            var actionResult = await Target.GetHeroByIdAsync(1);
             var okObjectResult = (OkObjectResult)actionResult;
             var actual = okObjectResult.Value;
 
-            Assert.IsType<Hero>(actual);
+            Assert.IsType<HeroModel>(actual);
         }
 
 
         [Fact]
-        public async void GetByName_Returns_NotNull()
+        public async void SearchHeroesByNameAsync_Returns_NotNull()
         {
-            var actual = await Target.GetByName(null);
+            var actual = await Target.SearchHeroesByNameAsync(null);
 
             Assert.NotNull(actual);
         }
 
 
         [Fact]
-        public async void GetByName_Returns_InstanceOf_OkObjectResult()
+        public async void SearchHeroesByNameAsync_Returns_InstanceOf_OkObjectResult()
         {
-            var actual = await Target.GetByName(null);
+            var actual = await Target.SearchHeroesByNameAsync(null);
 
             Assert.IsType<OkObjectResult>(actual);
         }
 
 
         [Fact]
-        public async void GetByName_Returns_Value_InstanceOf_ListOfHeroes()
+        public async void SearchHeroesByNameAsync_Returns_Value_InstanceOf_ListOfHeroes()
         {
-            var actionResult = await Target.GetByName(null);
+            var actionResult = await Target.SearchHeroesByNameAsync(null);
             var okObjectResult = (OkObjectResult)actionResult;
             var actual = okObjectResult.Value;
 
-            Assert.IsType<List<Hero>>(actual);
+            Assert.IsType<List<HeroModel>>(actual);
         }
 
 
         [Fact]
-        public async void GetByName_When_NullName_Returns_AllHeroes()
+        public async void SearchHeroesByNameAsync_When_NullName_Returns_AllHeroes()
         {
-            var actionResult = await Target.GetByName(null);
+            A.CallTo(() => UnitOfWork.HeroRepository.GetAllAsync())
+                .Returns(Task.FromResult(new List<Hero>
+                {
+                    new Hero(),
+                    new Hero(),
+                    new Hero(),
+                    new Hero(),
+                    new Hero()
+                }.AsEnumerable()));
+
+            var actionResult = await Target.SearchHeroesByNameAsync(null);
             var okObjectResult = (OkObjectResult)actionResult;
-            var actual = (List<Hero>)okObjectResult.Value;
+            var actual = (List<HeroModel>)okObjectResult.Value;
 
             Assert.Equal(5, actual.Count);
         }
 
 
         [Fact]
-        public async void GetByName_When_EmptyName_Returns_AllHeroes()
+        public async void SearchHeroesByNameAsync_When_EmptyName_Returns_AllHeroes()
         {
-            var actionResult = await Target.GetByName(string.Empty);
+            A.CallTo(() => UnitOfWork.HeroRepository.GetAllAsync())
+                .Returns(Task.FromResult(new List<Hero>
+                {
+                    new Hero(),
+                    new Hero(),
+                    new Hero(),
+                    new Hero(),
+                    new Hero()
+                }.AsEnumerable()));
+
+            var actionResult = await Target.SearchHeroesByNameAsync(string.Empty);
             var okObjectResult = (OkObjectResult)actionResult;
-            var actual = (List<Hero>)okObjectResult.Value;
+            var actual = (List<HeroModel>)okObjectResult.Value;
 
             Assert.Equal(5, actual.Count);
         }
 
 
         [Fact]
-        public async void GetByName_When_NoMatches_Returns_Empty()
+        public async void SearchHeroesByNameAsync_When_NoMatches_Returns_Empty()
         {
-            var actionResult = await Target.GetByName("no match");
+            var actionResult = await Target.SearchHeroesByNameAsync("no match");
             var okObjectResult = (OkObjectResult)actionResult;
-            var actual = (List<Hero>)okObjectResult.Value;
+            var actual = (List<HeroModel>)okObjectResult.Value;
 
             Assert.Empty(actual);
         }
 
 
         [Fact]
-        public async void GetByName_When_LowercasedName_And_HasMatches_Returns_NonEmpty()
+        public async void SearchHeroesByNameAsync_When_LowercasedName_And_HasMatches_Returns_NonEmpty()
         {
-            var actionResult = await Target.GetByName("lu");
+            A.CallTo(() => UnitOfWork.HeroRepository.SearchByNameAsync(A<string>.Ignored))
+                .Returns(Task.FromResult(new List<Hero>
+                {
+                    new Hero()
+                }.AsEnumerable()));
+
+            var actionResult = await Target.SearchHeroesByNameAsync("lu");
             var okObjectResult = (OkObjectResult)actionResult;
-            var actual = (List<Hero>)okObjectResult.Value;
+            var actual = (List<HeroModel>)okObjectResult.Value;
 
             Assert.Single(actual);
         }
 
 
         [Fact]
-        public async void GetByName_When_UppercasedName_And_HasMatches_Returns_NonEmpty()
+        public async void SearchHeroesByNameAsync_When_UppercasedName_And_HasMatches_Returns_NonEmpty()
         {
-            var actionResult = await Target.GetByName("LU");
+            A.CallTo(() => UnitOfWork.HeroRepository.SearchByNameAsync(A<string>.Ignored))
+                .Returns(Task.FromResult(new List<Hero>
+                {
+                    new Hero()
+                }.AsEnumerable()));
+
+            var actionResult = await Target.SearchHeroesByNameAsync("LU");
             var okObjectResult = (OkObjectResult)actionResult;
-            var actual = (List<Hero>)okObjectResult.Value;
+            var actual = (List<HeroModel>)okObjectResult.Value;
 
             Assert.Single(actual);
         }
 
 
         [Fact]
-        public async void GetByName_When_MixedcasedName_And_HasMatches_Returns_NonEmpty()
+        public async void SearchHeroesByNameAsync_When_MixedcasedName_And_HasMatches_Returns_NonEmpty()
         {
-            var actionResult = await Target.GetByName("Lu");
+            A.CallTo(() => UnitOfWork.HeroRepository.SearchByNameAsync(A<string>.Ignored))
+                .Returns(Task.FromResult(new List<Hero>
+                {
+                    new Hero()
+                }.AsEnumerable()));
+
+            var actionResult = await Target.SearchHeroesByNameAsync("Lu");
             var okObjectResult = (OkObjectResult)actionResult;
-            var actual = (List<Hero>)okObjectResult.Value;
+            var actual = (List<HeroModel>)okObjectResult.Value;
 
             Assert.Single(actual);
         }
 
 
         [Fact]
-        public async void Create_Returns_NotNull()
+        public async void CreateHeroAsync_Returns_NotNull()
         {
-            var actual = await Target.Create(null);
+            var actual = await Target.CreateHeroAsync(null);
 
             Assert.NotNull(actual);
         }
 
 
         [Fact]
-        public async void Create_When_NullHero_Returns_InstanceOf_BadRequestResult()
+        public async void CreateHeroAsync_When_NullHero_Returns_InstanceOf_BadRequestResult()
         {
-            var actual = await Target.Create(null);
+            var actual = await Target.CreateHeroAsync(null);
 
             Assert.IsType<BadRequestResult>(actual);
         }
 
 
         [Fact]
-        public async void Create_When_NonNullHero_Returns_InstanceOf_CreatedAtRouteResult()
+        public async void CreateHeroAsync_When_NonNullHero_Returns_InstanceOf_CreatedAtRouteResult()
         {
-            var actual = await Target.Create(new Hero());
-
+            var actual = await Target.CreateHeroAsync(new HeroModel());
+            
             Assert.IsType<CreatedAtRouteResult>(actual);
         }
 
 
         [Fact]
-        public async void Create_When_NonNullHero_Returns_Correctly()
+        public async void CreateHeroAsync_When_NonNullHero_Returns_Correctly()
         {
-            var actionResult = await Target.Create(new Hero());
+            var expectedId = 6L;
+            A.CallTo(() => UnitOfWork.HeroRepository.AddAsync(A<Hero>.Ignored))
+                .Invokes((Hero hero) => hero.Id = expectedId);
+
+            var actionResult = await Target.CreateHeroAsync(new HeroModel());
             var actual = (CreatedAtRouteResult)actionResult;
 
             Assert.Equal("GetHeroById", actual.RouteName);
-            Assert.Equal(6L, actual.RouteValues["id"]);
-            Assert.IsType<Hero>(actual.Value);
+            Assert.Equal(expectedId, actual.RouteValues["id"]);
+            Assert.IsType<HeroModel>(actual.Value);
         }
 
 
         [Fact]
-        public async void Create_When_NonNullHero_Updates_Database_Correctly()
+        public async void CreateHeroAsync_When_NonNullHero_Updates_Database_Correctly()
         {
-            await Target.Create(new Hero());
-            var actual = Context.Heroes.Count();
+            await Target.CreateHeroAsync(new HeroModel());
 
-            Assert.Equal(6, actual);
+            A.CallTo(() => UnitOfWork.SaveAsync())
+                .MustHaveHappened();
         }
 
 
         [Fact]
-        public async void Update_Returns_NotNull()
+        public async void UpdateHeroAsync_Returns_NotNull()
         {
-            var actual = await Target.Update(0, null);
+            var actual = await Target.UpdateHeroAsync(0, null);
 
             Assert.NotNull(actual);
         }
 
 
         [Fact]
-        public async void Update_When_NullHero_Returns_InstanceOf_BadRequestResult()
+        public async void UpdateHeroAsync_When_NullHero_Returns_InstanceOf_BadRequestResult()
         {
-            var actual = await Target.Update(0, null);
+            var actual = await Target.UpdateHeroAsync(0, null);
 
             Assert.IsType<BadRequestResult>(actual);
         }
 
 
         [Fact]
-        public async void Update_When_MismatchedId_Returns_InstanceOf_BadRequestResult()
+        public async void UpdateHeroAsync_When_MismatchedId_Returns_InstanceOf_BadRequestResult()
         {
-            var hero = new Hero
+            var hero = new HeroModel
             {
                 Id = 1
             };
-            var actual = await Target.Update(2, hero);
+            var actual = await Target.UpdateHeroAsync(2, hero);
 
             Assert.IsType<BadRequestResult>(actual);
         }
 
 
         [Fact]
-        public async void Update_When_NonExistentHero_Returns_InstanceOf_NotFoundResult()
+        public async void UpdateHeroAsync_When_NonExistentHero_Returns_InstanceOf_NotFoundResult()
         {
+            A.CallTo(() => UnitOfWork.HeroRepository.GetByIdAsync(A<long>.Ignored))
+                .Returns(Task.FromResult((Hero)null));
+
             var id = 999;
-            var hero = new Hero
+            var hero = new HeroModel
             {
                 Id = id
             };
-            var actual = await Target.Update(id, hero);
+            var actual = await Target.UpdateHeroAsync(id, hero);
 
             Assert.IsType<NotFoundResult>(actual);
         }
 
 
         [Fact]
-        public async void Update_When_ExistentHero_Returns_InstanceOf_NoContentResult()
+        public async void UpdateHeroAsync_When_ExistentHero_Returns_InstanceOf_NoContentResult()
         {
             var id = 1;
-            var hero = new Hero
+            var hero = new HeroModel
             {
                 Id = id,
                 Name = "New Name"
             };
-            var actual = await Target.Update(id, hero);
+            var actual = await Target.UpdateHeroAsync(id, hero);
 
             Assert.IsType<NoContentResult>(actual);
         }
 
 
         [Fact]
-        public async void Update_When_ExistentHero_Updates_Database_Correctly()
+        public async void UpdateHeroAsync_When_ExistentHero_Updates_Database_Correctly()
         {
             var id = 1;
             var expected = "New Name";
-            var hero = new Hero
+            var hero = new HeroModel
             {
                 Id = id,
                 Name = expected
             };
-            await Target.Update(id, hero);
+            await Target.UpdateHeroAsync(id, hero);
 
-            Assert.Equal(expected, Context.Heroes.First().Name);
+            A.CallTo(() => UnitOfWork.SaveAsync())
+                .MustHaveHappened();
         }
 
 
         [Fact]
-        public async void Delete_Returns_NotNull()
+        public async void DeleteHeroAsync_Returns_NotNull()
         {
-            var actual = await Target.Delete(0);
+            var actual = await Target.DeleteHeroAsync(0);
 
             Assert.NotNull(actual);
         }
 
 
         [Fact]
-        public async void Delete_When_NonExistentId_Returns_InstanceOf_NotFoundResult()
+        public async void DeleteHeroAsync_When_NonExistentId_Returns_InstanceOf_NotFoundResult()
         {
-            var actual = await Target.Delete(999);
+            A.CallTo(() => UnitOfWork.HeroRepository.GetByIdAsync(A<long>.Ignored))
+                .Returns(Task.FromResult((Hero)null));
+
+            var actual = await Target.DeleteHeroAsync(999);
 
             Assert.IsType<NotFoundResult>(actual);
         }
 
 
         [Fact]
-        public async void Delete_When_ExistentId_Returns_InstanceOf_NoContentResult()
+        public async void DeleteHeroAsync_When_ExistentId_Returns_InstanceOf_NoContentResult()
         {
-            var actual = await Target.Delete(1);
+            var actual = await Target.DeleteHeroAsync(1);
 
             Assert.IsType<NoContentResult>(actual);
         }
 
         
         [Fact]
-        public async void Delete_When_ExistentId_Updates_Database_Correctly()
+        public async void DeleteHeroAsync_When_ExistentId_Updates_Database_Correctly()
         {
-            await Target.Delete(1);
+            await Target.DeleteHeroAsync(1);
 
-            Assert.Equal(2, Context.Heroes.First().Id);
+            A.CallTo(() => UnitOfWork.SaveAsync())
+                .MustHaveHappened();
         }
         
+
+        /// <summary>
+        /// Disposes the test context.
+        /// </summary>
+        public void Dispose()
+        {
+            Target.Dispose();
+        }
+
     }
 
 }
