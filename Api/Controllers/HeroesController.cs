@@ -52,7 +52,7 @@ namespace Api.Controllers
 
 
         /// <summary>
-        /// Gets a hero by its ID.
+        /// Gets a hero by her ID.
         /// </summary>
         /// <param name="id">ID to look up.</param>
         /// <returns>The hero if found or NotFound otherwise.</returns>
@@ -111,7 +111,8 @@ namespace Api.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateHeroAsync([FromBody] HeroModel heroModel)
         {
-            if (heroModel == null)
+            if (heroModel == null
+                || false == ModelState.IsValid)
             {
                 return BadRequest();
             }

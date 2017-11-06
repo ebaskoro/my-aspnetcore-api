@@ -2,7 +2,7 @@ namespace Api.Models
 {
 
     /// <summary>
-    /// Hero.
+    /// Hero model.
     /// </summary>
     public class HeroModel
     {

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using System;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -40,8 +41,19 @@ namespace Api
         /// <param name="services">Collection of services.</param>
         public void ConfigureServices(IServiceCollection services)
         {
-            var connectionString = "Heroes";
-            services.AddDbContext<HeroContext>(options => options.UseInMemoryDatabase(connectionString));
+            var databaseOptions = new DatabaseOptions();
+            Configuration.GetSection("Database").Bind(databaseOptions);
+            var connectionString = databaseOptions.ConnectionString;
+            var databaseProvider = databaseOptions.Provider;
+
+            if (databaseProvider.Equals("MySql", StringComparison.InvariantCultureIgnoreCase))
+            {
+                services.AddDbContext<HeroContext>(options => options.UseMySql(connectionString));
+            }
+            else
+            {
+                services.AddDbContext<HeroContext>(options => options.UseInMemoryDatabase(connectionString));
+            }
             
             services.AddScoped<IHeroRepository, HeroRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -61,6 +73,7 @@ namespace Api
         /// Configures the middleware used by the application.
         /// </summary>
         /// <param name="app">Application to configure.</param>
+        /// <param name="heroContext">Hero context to use.</param>
         public void Configure(IApplicationBuilder app, HeroContext heroContext)
         {
             app.UseCors("AllowAll");
