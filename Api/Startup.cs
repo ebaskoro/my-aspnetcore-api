@@ -15,12 +15,19 @@ namespace Api
     public class Startup
     {
 
+        /// <summary>
+        /// Creates an application startup.
+        /// </summary>
+        /// <param name="configuration">Configuration to use.</param>
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
         }
 
 
+        /// <summary>
+        /// Gets the configuration.
+        /// </summary>
         IConfiguration Configuration
         {
             get;
@@ -33,7 +40,9 @@ namespace Api
         /// <param name="services">Collection of services.</param>
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContext<HeroContext>(options => options.UseInMemoryDatabase("Heroes"));
+            var connectionString = "Heroes";
+            services.AddDbContext<HeroContext>(options => options.UseInMemoryDatabase(connectionString));
+            
             services.AddScoped<IHeroRepository, HeroRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             
@@ -52,11 +61,13 @@ namespace Api
         /// Configures the middleware used by the application.
         /// </summary>
         /// <param name="app">Application to configure.</param>
-        public void Configure(IApplicationBuilder app)
+        public void Configure(IApplicationBuilder app, HeroContext heroContext)
         {
             app.UseCors("AllowAll");
 
             app.UseMvc();
+
+            heroContext.Database.EnsureCreated();
         }
 
     }
