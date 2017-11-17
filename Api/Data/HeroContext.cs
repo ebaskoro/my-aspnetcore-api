@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 
 
-namespace Api.Models
+namespace Api.Data
 {
 
     /// <summary>

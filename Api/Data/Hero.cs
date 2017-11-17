@@ -1,8 +1,11 @@
-namespace Api.Models
+using System.ComponentModel.DataAnnotations;
+
+
+namespace Api.Data
 {
 
     /// <summary>
-    /// Hero.
+    /// Hero entity.
     /// </summary>
     public class Hero
     {
@@ -21,6 +24,7 @@ namespace Api.Models
         /// <summary>
         /// Gets or sets the name.
         /// </summary>
+        [Required]
         public string Name
         {
             get;
@@ -29,5 +33,5 @@ namespace Api.Models
         }
 
     }
-    
+
 }
