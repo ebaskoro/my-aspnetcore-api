@@ -8,6 +8,7 @@ using Xunit;
 using Api.Controllers;
 using Api.Data;
 using Api.Models;
+using Api.Services;
 
 
 namespace Api.Tests.Controllers
@@ -25,8 +26,9 @@ namespace Api.Tests.Controllers
         public HeroesControllerTest()
         {
             UnitOfWork = A.Fake<IUnitOfWork>();
+            MessagingService = A.Fake<IHeroMessagingService>();
 
-            Target = new HeroesController(UnitOfWork);
+            Target = new HeroesController(UnitOfWork, MessagingService);
         }
 
 
@@ -38,6 +40,14 @@ namespace Api.Tests.Controllers
             get;
         }
 
+
+        /// <summary>
+        /// Gets the fake messaging service.
+        /// </summary>
+        IHeroMessagingService MessagingService
+        {
+            get;
+        }
 
 
         /// <summary>
@@ -268,9 +278,15 @@ namespace Api.Tests.Controllers
 
 
         [Fact]
+        public async void CreateHeroAsync_When_NullHero_Returns_InstanceOf_BadRequestResult()
         {
             var actual = await Target.CreateHeroAsync(null);
 
+            Assert.IsType<BadRequestResult>(actual);
+        }
+
+
+        [Fact]
         public async void CreateHeroAsync_When_NonNullHero_Returns_InstanceOf_CreatedAtRouteResult()
         {
             var actual = await Target.CreateHeroAsync(new HeroModel());

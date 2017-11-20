@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Api.Data;
+using Api.Services;
 
 
 namespace Api
@@ -16,22 +17,16 @@ namespace Api
     public class Startup
     {
 
+        private readonly IConfiguration _configuration;
+
+
         /// <summary>
         /// Creates an application startup.
         /// </summary>
         /// <param name="configuration">Configuration to use.</param>
         public Startup(IConfiguration configuration)
         {
-            Configuration = configuration;
-        }
-
-
-        /// <summary>
-        /// Gets the configuration.
-        /// </summary>
-        IConfiguration Configuration
-        {
-            get;
+            _configuration = configuration;
         }
 
 
@@ -42,7 +37,9 @@ namespace Api
         public void ConfigureServices(IServiceCollection services)
         {
             var databaseOptions = new DatabaseOptions();
-            Configuration.GetSection("Database").Bind(databaseOptions);
+            _configuration
+                .GetSection("Database")
+                .Bind(databaseOptions);
             var connectionString = databaseOptions.ConnectionString;
             var databaseProvider = databaseOptions.Provider;
 
@@ -66,6 +63,20 @@ namespace Api
                         .AllowAnyHeader()));
 
             services.AddMvc();
+
+            var messagingOptions = new MessagingOptions();
+            _configuration
+                .GetSection("Messaging")
+                .Bind(messagingOptions);
+            
+            if (messagingOptions.HasUrl)
+            {
+                services.AddScoped<IHeroMessagingService, SignalRHeroMessagingService>();
+            }
+            else
+            {
+                services.AddScoped<IHeroMessagingService, NoopHeroMessagingService>();
+            }
         }
 
         

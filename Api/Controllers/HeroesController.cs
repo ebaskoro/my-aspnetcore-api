@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Api.Data;
 using Api.Models;
+using Api.Services;
 
 
 namespace Api.Controllers
@@ -18,16 +19,19 @@ namespace Api.Controllers
 
         private readonly IUnitOfWork _unitOfWork;
         private readonly IHeroRepository _heroRepository;
+        private readonly IHeroMessagingService _messagingService;
 
 
         /// <summary>
         /// Creates a new controller.
         /// </summary>
         /// <param name="context">Unit of work to use.</param>
-        public HeroesController(IUnitOfWork unitOfWork)
+        /// <param name="messagingService">Messaging service to use.</param>
+        public HeroesController(IUnitOfWork unitOfWork, IHeroMessagingService messagingService)
         {
             _unitOfWork = unitOfWork;
             _heroRepository = unitOfWork.HeroRepository;
+            _messagingService = messagingService;
         }
 
 
@@ -125,6 +129,8 @@ namespace Api.Controllers
             await _unitOfWork.SaveAsync();
             heroModel.Id = heroToAdd.Id;
 
+            await _messagingService.AddAsync(heroModel);
+
             return CreatedAtRoute("GetHeroById", new { id = heroToAdd.Id }, heroModel);
         }
 
@@ -153,6 +159,8 @@ namespace Api.Controllers
             foundHero.Name = heroModel.Name;
             await _unitOfWork.SaveAsync();
 
+            await _messagingService.UpdateAsync(heroModel);
+
             return NoContent();
         }
 
@@ -174,100 +182,7 @@ namespace Api.Controllers
             _heroRepository.Remove(heroToDelete);
             await _unitOfWork.SaveAsync();
 
-            return NoContent();
-        }
-
-
-        /// <summary>
-        /// Gets a hero by its ID.
-        /// </summary>
-        /// <param name="id">ID to look up.</param>
-        /// <returns>The hero if found or NotFound otherwise.</returns>
-        [HttpGet("{id}", Name = "GetHeroById")]
-        public async Task<IActionResult> GetById(long id)
-        {
-            var foundHero = await _context
-                .Heroes
-                .FirstOrDefaultAsync(hero => hero.Id == id);
-
-            if (foundHero == null)
-            {
-                return NotFound();
-            }
-
-            return Ok(foundHero);
-        }
-
-
-        /// <summary>
-        /// Creates a hero.
-        /// </summary>
-        /// <param name="hero">Hero to create.</param>
-        /// <returns>The newly created hero.</returns>
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] Hero hero)
-        {
-            if (hero == null)
-            {
-                return BadRequest();
-            }
-
-            _context.Heroes.Add(hero);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtRoute("GetHeroById", new { id = hero.Id }, hero);
-        }
-
-
-        /// <summary>
-        /// Updates a hero.
-        /// </summary>
-        /// <param name="id">ID of the hero to update.</param>
-        /// <param name="heroToUpdate">Hero to update.</param>
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(long id, [FromBody] Hero heroToUpdate)
-        {
-            if (heroToUpdate == null
-                || heroToUpdate.Id != id)
-            {
-                return BadRequest();
-            }
-
-            var foundHero = await _context
-                .Heroes
-                .FirstOrDefaultAsync(hero => hero.Id == id);
-            
-            if (foundHero == null)
-            {
-                return NotFound();
-            }
-
-            foundHero.Name = heroToUpdate.Name;
-            _context.Heroes.Update(foundHero);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-
-        /// <summary>
-        /// Deletes a hero.
-        /// </summary>
-        /// <param name="id">ID of the hero to delete.</param>
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(long id)
-        {
-            var heroToDelete = await _context
-                .Heroes
-                .FirstOrDefaultAsync(hero => hero.Id == id);
-            
-            if (heroToDelete == null)
-            {
-                return NotFound();
-            }
-
-            _context.Heroes.Remove(heroToDelete);
-            await _context.SaveChangesAsync();
+            await _messagingService.RemoveAsync(id);
 
             return NoContent();
         }
