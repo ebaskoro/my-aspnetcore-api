@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Api.Data;
 using Api.Models;
+using Api.Services;
 
 
 namespace Api.Controllers
@@ -18,16 +19,19 @@ namespace Api.Controllers
 
         private readonly IUnitOfWork _unitOfWork;
         private readonly IHeroRepository _heroRepository;
+        private readonly IHeroMessagingService _messagingService;
 
 
         /// <summary>
         /// Creates a new controller.
         /// </summary>
         /// <param name="context">Unit of work to use.</param>
-        public HeroesController(IUnitOfWork unitOfWork)
+        /// <param name="messagingService">Messaging service to use.</param>
+        public HeroesController(IUnitOfWork unitOfWork, IHeroMessagingService messagingService)
         {
             _unitOfWork = unitOfWork;
             _heroRepository = unitOfWork.HeroRepository;
+            _messagingService = messagingService;
         }
 
 
@@ -125,6 +129,8 @@ namespace Api.Controllers
             await _unitOfWork.SaveAsync();
             heroModel.Id = heroToAdd.Id;
 
+            await _messagingService.AddAsync(heroModel);
+
             return CreatedAtRoute("GetHeroById", new { id = heroToAdd.Id }, heroModel);
         }
 
@@ -153,6 +159,8 @@ namespace Api.Controllers
             foundHero.Name = heroModel.Name;
             await _unitOfWork.SaveAsync();
 
+            await _messagingService.UpdateAsync(heroModel);
+
             return NoContent();
         }
 
@@ -173,6 +181,8 @@ namespace Api.Controllers
 
             _heroRepository.Remove(heroToDelete);
             await _unitOfWork.SaveAsync();
+
+            await _messagingService.RemoveAsync(id);
 
             return NoContent();
         }

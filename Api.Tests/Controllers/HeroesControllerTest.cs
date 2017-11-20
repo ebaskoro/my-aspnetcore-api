@@ -8,6 +8,7 @@ using Xunit;
 using Api.Controllers;
 using Api.Data;
 using Api.Models;
+using Api.Services;
 
 
 namespace Api.Tests.Controllers
@@ -25,8 +26,9 @@ namespace Api.Tests.Controllers
         public HeroesControllerTest()
         {
             UnitOfWork = A.Fake<IUnitOfWork>();
+            MessagingService = A.Fake<IHeroMessagingService>();
 
-            Target = new HeroesController(UnitOfWork);
+            Target = new HeroesController(UnitOfWork, MessagingService);
         }
 
 
@@ -38,6 +40,14 @@ namespace Api.Tests.Controllers
             get;
         }
 
+
+        /// <summary>
+        /// Gets the fake messaging service.
+        /// </summary>
+        IHeroMessagingService MessagingService
+        {
+            get;
+        }
 
 
         /// <summary>
